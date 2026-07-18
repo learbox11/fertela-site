@@ -22,9 +22,10 @@
      block (name, NIF, contact) before this page goes live.
      Format pre-entity: pending gestor confirmation. Publish gate.
   4. NO TRACKING: no cookies, no analytics, no third-party calls
-     (once fonts are self-hosted). ONE inline script only (hero
-     story click-replay) - no network, no storage; the footer's
-     no-cookies/no-analytics claim is unaffected. Keep it true.
+     (once fonts are self-hosted). ONE inline script only (story
+     click-replay + scroll-start via IntersectionObserver) - no
+     network, no storage; the footer's no-cookies/no-analytics
+     claim is unaffected. Keep it true.
 ============================================================= -->
 <style>
   /* Fonts embedded as base64 WOFF (Latin subset of the founder-supplied variable TTFs).
@@ -72,7 +73,11 @@
   .lockup .word .tail{font-family:'Newsreader',serif;font-style:italic;font-weight:400;font-size:18px;color:var(--slate-2);margin-left:2px;}
 
   /* ---------- header ---------- */
-  header{background:var(--mist);}
+  header{position:sticky;top:0;z-index:100;
+    background:rgba(245,248,250,.9);
+    -webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);
+    border-bottom:1px solid rgba(33,51,67,.06);}
+  html{scroll-padding-top:96px;}
   .nav{display:flex;align-items:center;justify-content:space-between;padding:26px 0;}
   .nav-cta{
     font-size:14.5px;font-weight:500;color:var(--navy);text-decoration:none;
@@ -80,21 +85,39 @@
     transition:background .18s,color .18s;
   }
   .nav-cta:hover{background:var(--navy);color:var(--white);}
+  .nav-right{display:flex;align-items:center;gap:12px;}
+  /* section menu: hover + click (desktop), click (mobile), focus-openable */
+  .menu{position:relative;}
+  .menu::after{content:"";position:absolute;right:-4px;top:100%;height:14px;width:224px;}  /* hover bridge spanning the panel */
+  .menu-btn{display:flex;align-items:center;justify-content:center;width:41px;height:41px;
+    border:1.5px solid var(--navy);border-radius:8px;background:transparent;color:var(--navy);
+    cursor:pointer;transition:background .18s,color .18s;}
+  .menu-btn:hover{background:var(--navy);color:var(--white);}
+  .menu-panel{display:none;position:absolute;right:0;top:calc(100% + 8px);min-width:212px;
+    background:var(--white);border:1px solid var(--line);border-radius:12px;
+    box-shadow:0 14px 34px rgba(33,51,67,.14);padding:8px;z-index:60;}
+  .menu.open .menu-panel{display:block;}
+  @media (hover:hover){ .menu:hover .menu-panel{display:block;} }
+  .menu-panel a{display:block;font-size:14px;font-weight:500;color:var(--slate-2);
+    text-decoration:none;padding:9px 14px;border-radius:8px;}
+  .menu-panel a:hover{color:var(--navy);background:var(--mist);}
 
-  /* ---------- hero ---------- */
-  .hero{padding:60px 0 68px;}
-  .hero-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;}
+  /* ---------- hero (concept-C register, vision-board §17c: centred · eyebrow pill · italic key phrase · soft glow · SEF stat strip) ---------- */
+  .hero{padding:56px 0 78px;background:radial-gradient(90% 62% at 50% -10%, rgba(242,97,60,.06), transparent 58%);}
+  .hero-stack{display:flex;flex-direction:column;align-items:center;text-align:center;}
   .kicker{
-    display:inline-block;font-size:12.5px;font-weight:500;letter-spacing:.14em;
-    text-transform:uppercase;color:var(--slate-2);margin-bottom:20px;
+    display:inline-flex;align-items:center;gap:9px;font-size:12px;font-weight:500;letter-spacing:.16em;
+    text-transform:uppercase;color:#C24E30;margin-bottom:30px;
+    border:1px solid rgba(242,97,60,.4);border-radius:24px;padding:8px 18px;
     text-wrap:balance;
   }
-  .kicker::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--orange);margin-right:10px;vertical-align:1px;}
+  .kicker::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--orange);flex:none;}
   h1{
-    font-weight:600;font-size:clamp(32px,4.6vw,46px);line-height:1.16;
-    letter-spacing:-1px;color:var(--navy);margin-bottom:24px;
+    font-weight:600;font-size:clamp(32px,4.6vw,48px);line-height:1.14;
+    letter-spacing:-1px;color:var(--navy);max-width:680px;margin:0 auto 22px;
   }
-  .thesis{font-size:17.5px;color:var(--slate);max-width:56ch;margin-bottom:14px;}
+  h1 em{font-family:'Newsreader',serif;font-style:italic;font-weight:500;color:var(--orange);letter-spacing:0;}
+  .thesis{font-size:17.5px;color:var(--slate);max-width:56ch;margin:0 auto 14px;}
   .thesis strong{font-weight:500;color:var(--navy);}
   .thesis-src{font-size:13px;color:var(--slate-2);margin-bottom:32px;}
   .btn{
@@ -109,8 +132,8 @@
   .btn-sub{display:block;margin-top:14px;font-size:13.5px;color:var(--slate-2);}
   .btn-sub a{color:var(--slate-2);}
 
-  .hero-mark{display:flex;justify-content:center;}
-  .hero-card{width:min(470px,100%);border:1px solid transparent;border-radius:20px;
+  .hero-mark{display:flex;justify-content:center;margin-top:38px;}
+  .hero-card{width:min(560px,100%);border:1px solid transparent;border-radius:20px;
     background:transparent;padding:6px;cursor:pointer;}
   .hero-card svg{width:100%;height:auto;display:block;}
 
@@ -120,21 +143,22 @@
     color:var(--navy);line-height:1.25;margin-bottom:14px;
   }
   .sec-lead{font-size:15.5px;color:var(--slate-2);max-width:62ch;margin-bottom:34px;}
+  .why .sec-title,.why .sec-lead,.work .sec-title,.work .sec-lead,.cards .sec-title,.cards .sec-lead{text-align:center;margin-left:auto;margin-right:auto;}
 
   /* ---------- how we work cards ---------- */
-  .cards{padding:8px 0 64px;}
-  .cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;}
+  .cards{padding:0 0 64px;}
+  .cards-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
   .card{
     background:var(--white);border:1px solid var(--line);border-radius:14px;
-    padding:30px 28px;
+    padding:24px 22px;
   }
-  .card .glyph{height:34px;margin-bottom:18px;display:flex;align-items:flex-end;}
-  .card h2{font-size:17px;font-weight:600;color:var(--navy);letter-spacing:-.2px;margin-bottom:10px;}
-  .card p{font-size:14.5px;color:var(--slate);}
+  .card .glyph{height:30px;margin-bottom:14px;display:flex;align-items:flex-end;}
+  .card h2{font-size:16px;font-weight:600;color:var(--navy);letter-spacing:-.2px;margin-bottom:8px;}
+  .card p{font-size:14px;color:var(--slate);}
   .card p em{font-style:normal;font-weight:500;color:var(--navy);}
 
   /* ---------- who we are panel ---------- */
-  .about{padding:0 0 64px;}
+  .about{padding:8px 0 64px;}
   .about-inner{
     background:var(--white);border:1px solid var(--line);border-radius:16px;
     padding:42px 48px;
@@ -145,13 +169,15 @@
   .about p{font-size:15px;color:var(--slate);}
   .about p em{font-style:normal;font-weight:500;color:var(--navy);}
 
-  /* ---------- why fertility marketing is different ---------- */
-  .why{padding:0 0 72px;}
+  /* ---------- why fertility marketing is different (navy band, soft fade-in from mist) ---------- */
+  .why{padding:76px 0 84px;margin-bottom:72px;background:var(--navy);}
+  .why .sec-title{color:var(--white);}
+  .why .sec-lead{color:#AFC3D6;}
   .why-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:26px 44px;}
-  .why-item{border-top:1px solid var(--line);padding-top:18px;}
-  .why-item h3{font-size:15.5px;font-weight:600;color:var(--navy);letter-spacing:-.2px;margin-bottom:7px;}
+  .why-item{border-top:1px solid rgba(255,255,255,.16);padding-top:18px;}
+  .why-item h3{font-size:15.5px;font-weight:600;color:var(--white);letter-spacing:-.2px;margin-bottom:7px;}
   .why-item h3::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--teal);margin-right:9px;vertical-align:1px;}
-  .why-item p{font-size:14.5px;color:var(--slate);}
+  .why-item p{font-size:14.5px;color:#C2D1DF;}
 
   /* ---------- corridor review ---------- */
   .review{padding:0 0 72px;}
@@ -240,7 +266,7 @@
   .foot{display:flex;flex-wrap:wrap;gap:10px 28px;align-items:center;justify-content:space-between;font-size:13.5px;color:var(--slate-2);}
   .foot a{color:var(--slate-2);text-decoration:none;border-bottom:1px solid var(--line);}
   .foot a:hover{color:var(--navy);border-color:var(--navy);}
-  .foot .quiet{font-size:12.5px;}
+  .foot .quiet{font-size:12.5px;flex-basis:100%;text-align:center;}
 
   /* ---------- hero story (30s cycle: 3 scenes captured into dots -> mark forms in the disc) ---------- */
   .hs-scene,.hs-dot,.hs-disc{transform-box:fill-box;transform-origin:center;}
@@ -311,24 +337,57 @@
 
   /* ---------- responsive ---------- */
   @media (max-width:860px){
-    .hero{padding:44px 0 52px;}
-    .hero-grid{grid-template-columns:1fr;gap:40px;}
-    .hero-card{width:min(360px,92vw);}
+    .wrap{padding:0 24px;}
+    /* header: single compact row — smaller lockup left, buttons inline right */
+    .nav{flex-wrap:nowrap;justify-content:space-between;gap:10px;padding:13px 0 12px;}
+    .lockup{gap:8px;}
+    .lockup svg{width:27px;height:27px;}
+    .lockup .word .name,.lockup .word .dot{font-size:18.5px;letter-spacing:-.3px;}
+    .lockup .word .tail{font-size:14.5px;}
+    .nav-right{gap:9px;flex:none;}
+    .nav-cta{padding:7px 12px;font-size:13.5px;}
+    /* section nav: centred wrapping rows */
+    .sec-nav{justify-content:center;gap:6px 18px;padding:2px 0 16px;}
+    .sec-nav a{font-size:13px;}
+    .menu-btn{width:35px;height:35px;}
+    /* panel becomes a full-width sheet anchored to the header, so it can never
+       overflow the viewport regardless of where the button lands */
+    header{position:sticky;}
+    html{scroll-padding-top:78px;}
+    .menu{position:static;}
+    .menu::after{display:none;}
+    .menu-panel{left:16px;right:16px;top:calc(100% - 6px);min-width:0;}
+    .hero{padding:40px 0 46px;}
+    .kicker{font-size:11px;letter-spacing:.13em;padding:7px 14px;text-align:center;margin-bottom:24px;}
+    .hero-card{width:min(430px,100%);}
+    .hero-card svg text{font-size:22px;}
+    .hero-mark{margin-top:30px;}
+    .cards{padding:0 0 52px;}
     .cards-grid{grid-template-columns:1fr;}
-    .about-inner{padding:34px 28px;}
-    .about-grid{grid-template-columns:1fr;gap:28px;}
+    .about{padding:4px 0 52px;}
+    .about-inner{padding:32px 24px;}
+    .about-grid{grid-template-columns:1fr;gap:26px;}
+    .why{padding:54px 0 58px;margin-bottom:56px;}
     .why-grid{grid-template-columns:1fr;gap:22px;}
-    .review-inner{grid-template-columns:1fr;padding:34px 28px;gap:26px;}
+    .review{padding:0 0 56px;}
+    .review-inner{grid-template-columns:1fr;padding:32px 24px;gap:24px;}
     .review-mark{display:none;}
     .review-cta{height:auto;gap:12px;}
     .review-note{position:static;margin-top:0;}
+    .work{padding:0 0 56px;}
     .steps{grid-template-columns:1fr;}
     .work-lists{grid-template-columns:1fr;}
-    .founder-inner{grid-template-columns:1fr;padding:34px 28px;}
-    .band-grid{grid-template-columns:1fr;gap:28px;}
+    .founder{padding:0 0 56px;}
+    .founder-inner{grid-template-columns:1fr;padding:32px 24px;}
+    .band{padding:56px 0;}
+    .band-grid{grid-template-columns:1fr;gap:26px;}
     .band-mark{display:none;}
+    .foot{flex-direction:column;align-items:center;gap:12px;text-align:center;}
   }
   @media (max-width:480px){
+    h1{font-size:29px;letter-spacing:-.6px;}
+    .thesis{font-size:16px;}
+    .lockup .word .tail{display:none;}
     .btn{white-space:normal;width:100%;}
     .review-cta{align-items:stretch;}
     .review-note{max-width:none;}
@@ -348,29 +407,32 @@
       </svg>
       <span class="word"><span class="name">Fertela</span><span class="dot">.</span><span class="tail">agency</span></span>
     </a>
-    <a class="nav-cta" href="https://calendar.app.google/WgMk656imA82c9XU6" target="_blank" rel="noopener">Book a Conversation</a>
-  </div>
-  <div class="wrap">
-    <nav class="sec-nav" aria-label="Page sections">
-      <a href="#how-we-work">How We Work</a>
-      <a href="#who-we-are">Who We Are</a>
-      <a href="#why-different">Why It's Different</a>
-      <a href="#corridor-review">Corridor Review</a>
-      <a href="#working-together">Working Together</a>
-      <a href="#founder">Founder</a>
-      <a href="#contact">Contact</a>
-    </nav>
+    <div class="nav-right">
+      <nav class="menu" id="secMenu" aria-label="Page sections">
+        <button class="menu-btn" id="secMenuBtn" aria-expanded="false" aria-haspopup="true" aria-controls="secMenuPanel" title="Page sections">
+          <svg width="18" height="14" viewBox="0 0 18 14" aria-hidden="true"><path d="M1 1h16M1 7h16M1 13h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <div class="menu-panel" id="secMenuPanel">
+          <a href="#who-we-are">Who We Are</a>
+          <a href="#how-we-work">How We Work</a>
+          <a href="#why-different">Marketing for Fertility</a>
+          <a href="#corridor-review">Corridor Review</a>
+          <a href="#working-together">Working Together</a>
+          <a href="#founder">Founder</a>
+          <a href="#contact">Contact</a>
+        </div>
+      </nav>
+      <a class="nav-cta" href="https://calendar.app.google/WgMk656imA82c9XU6" target="_blank" rel="noopener">Book a Conversation</a>
+    </div>
   </div>
 </header>
 
 <main>
   <!-- ================= HERO ================= -->
   <section class="hero">
-    <div class="wrap">
+    <div class="wrap hero-stack">
       <span class="kicker">International&nbsp;patient&nbsp;acquisition · private&nbsp;fertility&nbsp;clinics · Spain</span>
-      <div class="hero-grid">
-      <div>
-        <h1>International patients are already searching. Make sure it's your clinic they find.</h1>
+      <h1>International patients are already searching. Make sure it's <em>your clinic</em> they find.</h1>
         <p class="thesis">
           More than <strong>34,000 IVF cycles in Spain each year</strong> are for patients who
           travel from abroad, almost twice as many as in 2019. That demand already exists
@@ -378,12 +440,96 @@
           clinic capture it.
         </p>
         <p class="thesis-src">Source: Registro Nacional de Actividad – Registro SEF (Sociedad Española de Fertilidad), FIV reports 2019–2023.</p>
-        <a class="btn" href="https://calendar.app.google/WgMk656imA82c9XU6" target="_blank" rel="noopener">Book Your Corridor Review</a>
-        <span class="btn-sub">Or write to <a href="mailto:hello@fertela.agency">hello@fertela.agency</a>.</span>
+      <a class="btn" href="https://calendar.app.google/WgMk656imA82c9XU6" target="_blank" rel="noopener">Book Your Corridor Review</a>
+      <span class="btn-sub">Or write to <a href="mailto:hello@fertela.agency">hello@fertela.agency</a>.</span>
+    </div>
+  </section>
+
+  <!-- ================= HOW WE WORK ================= -->
+  <section id="who-we-are" class="about" aria-label="Who we are and how we work">
+    <div class="wrap">
+      <div class="about-inner">
+        <div class="about-grid">
+
+          <div>
+            <h2>Who we are</h2>
+            <p>A <em>Barcelona-based, internationally focused</em> patient-acquisition agency
+            for private fertility clinics across Spain. We build the corridor between your
+            clinic and the international patients already looking for it.</p>
+          </div>
+
+          <div>
+            <h2>How we partner</h2>
+            <p>A small number of clinic partnerships at a time: <em>one clinic partner per
+            international corridor</em>. No percentage of your ad spend, so no incentive to
+            inflate it. And we measure what your clinic actually banks: <em>consultations
+            that happen, not leads delivered</em>.</p>
+          </div>
+
+          <div>
+            <h2>Our principles</h2>
+            <p>Fertility care is one of the most <em>emotionally complex, financially
+            significant</em> decisions in medicine. We market accordingly: honest claims, no
+            pressure, no trading on hope, and patient privacy treated as a design requirement.</p>
+          </div>
+
+        </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ================= WHO WE ARE ================= -->
+  <section id="how-we-work" class="cards" aria-label="How Fertela works">
+    <div class="wrap">
+      <h2 class="sec-title">How we work</h2>
+      <p class="sec-lead">Three principles behind every corridor we build.</p>
+    </div>
+    <div class="wrap cards-grid">
+
+      <div class="card">
+        <div class="glyph" aria-hidden="true">
+          <svg width="46" height="30" viewBox="0 0 46 30">
+            <circle cx="7" cy="24" r="3.5" fill="#213343"/>
+            <circle cx="21" cy="17" r="5" fill="#213343"/>
+            <circle cx="37" cy="9" r="7" fill="#F2613C"/>
+          </svg>
+        </div>
+        <h2>Built in the source market</h2>
+        <p>Campaigns researched, written, and run <em>in the patient's home market and
+        language</em>, built around the questions international patients actually ask.</p>
+      </div>
+
+      <div class="card">
+        <div class="glyph" aria-hidden="true">
+          <svg width="46" height="30" viewBox="0 0 46 30">
+            <rect x="2" y="11" width="42" height="8" rx="4" fill="#E3EAF1"/>
+            <rect x="2" y="11" width="27" height="8" rx="4" fill="#00BDA5"/>
+          </svg>
+        </div>
+        <h2>Your accounts, your data</h2>
+        <p>Campaigns run in <em>your</em> ad accounts; enquiries land in <em>your</em> systems.
+        Patient data stays inside the clinic. Fertela never needs to hold it.</p>
+      </div>
+
+      <div class="card">
+        <div class="glyph" aria-hidden="true">
+          <svg width="46" height="30" viewBox="0 0 46 30">
+            <path d="M23 2 L40 8 V16 C40 23 33 27.5 23 29 C13 27.5 6 23 6 16 V8 Z" fill="none" stroke="#213343" stroke-width="2.6" stroke-linejoin="round"/>
+            <circle cx="23" cy="15.5" r="4.5" fill="#F2613C"/>
+          </svg>
+        </div>
+        <h2>Compliance as architecture</h2>
+        <p>GDPR Article 9, Spanish <em>publicidad sanitaria</em> rules, and source-market ad
+        codes are constraints we design around, not fix later.</p>
+      </div>
+
+    </div>
+    <!-- story animation below the cards (rehoused from the hero 17 Jul, concept-C pass):
+         the loop narrates the three steps the cards describe; scroll-start at 65% -->
+    <div class="wrap">
       <div class="hero-mark">
         <div class="hero-card hs-play" id="heroStory" title="Click to replay">
-        <svg viewBox="0 0 500 470" role="img" aria-label="Animated story: international patients searching for clinics in Spain, the corridor Fertela builds and runs to your clinic, and consultations booked in your calendar come together as the Fertela mark.">
+        <svg viewBox="-70 20 640 430" role="img" aria-label="Animated story: international patients searching for clinics in Spain, the corridor Fertela builds and runs to your clinic, and consultations booked in your calendar come together as the Fertela mark.">
           <defs>
             <radialGradient id="hsGlassFill" cx="34%" cy="26%" r="88%">
               <stop offset="0" stop-color="#FFFFFF"/>
@@ -456,84 +602,6 @@
         </svg>
         </div>
       </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= HOW WE WORK ================= -->
-  <section id="how-we-work" class="cards" aria-label="How Fertela works">
-    <div class="wrap cards-grid">
-
-      <div class="card">
-        <div class="glyph" aria-hidden="true">
-          <svg width="46" height="30" viewBox="0 0 46 30">
-            <circle cx="7" cy="24" r="3.5" fill="#213343"/>
-            <circle cx="21" cy="17" r="5" fill="#213343"/>
-            <circle cx="37" cy="9" r="7" fill="#F2613C"/>
-          </svg>
-        </div>
-        <h2>Built in the source market</h2>
-        <p>Campaigns researched, written, and run <em>in the patient's home market and
-        language</em>, built around the questions international patients actually ask.</p>
-      </div>
-
-      <div class="card">
-        <div class="glyph" aria-hidden="true">
-          <svg width="46" height="30" viewBox="0 0 46 30">
-            <rect x="2" y="11" width="42" height="8" rx="4" fill="#E3EAF1"/>
-            <rect x="2" y="11" width="27" height="8" rx="4" fill="#00BDA5"/>
-          </svg>
-        </div>
-        <h2>Your accounts, your data</h2>
-        <p>Campaigns run in <em>your</em> ad accounts; enquiries land in <em>your</em> systems.
-        Patient data stays inside the clinic. Fertela never needs to hold it.</p>
-      </div>
-
-      <div class="card">
-        <div class="glyph" aria-hidden="true">
-          <svg width="46" height="30" viewBox="0 0 46 30">
-            <path d="M23 2 L40 8 V16 C40 23 33 27.5 23 29 C13 27.5 6 23 6 16 V8 Z" fill="none" stroke="#213343" stroke-width="2.6" stroke-linejoin="round"/>
-            <circle cx="23" cy="15.5" r="4.5" fill="#F2613C"/>
-          </svg>
-        </div>
-        <h2>Compliance as architecture</h2>
-        <p>GDPR Article 9, Spanish <em>publicidad sanitaria</em> rules, and source-market ad
-        codes are constraints we design around, not fix later.</p>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ================= WHO WE ARE ================= -->
-  <section id="who-we-are" class="about" aria-label="Who we are and how we work">
-    <div class="wrap">
-      <div class="about-inner">
-        <div class="about-grid">
-
-          <div>
-            <h2>Who we are</h2>
-            <p>A <em>Barcelona-based, internationally focused</em> patient-acquisition agency
-            for private fertility clinics across Spain. We build the corridor between your
-            clinic and the international patients already looking for it.</p>
-          </div>
-
-          <div>
-            <h2>How we partner</h2>
-            <p>A small number of clinic partnerships at a time: <em>one clinic partner per
-            international corridor</em>. No percentage of your ad spend, so no incentive to
-            inflate it. And we measure what your clinic actually banks: <em>consultations
-            that happen, not leads delivered</em>.</p>
-          </div>
-
-          <div>
-            <h2>Our principles</h2>
-            <p>Fertility care is one of the most <em>emotionally complex, financially
-            significant</em> decisions in medicine. We market accordingly: honest claims, no
-            pressure, no trading on hope, and patient privacy treated as a design requirement.</p>
-          </div>
-
-        </div>
-      </div>
     </div>
   </section>
 
@@ -541,20 +609,20 @@
   <section id="why-different" class="why" aria-label="Why fertility marketing is different">
     <div class="wrap">
       <h2 class="sec-title">Why fertility marketing is different</h2>
-      <p class="sec-lead">Generic healthcare marketing breaks here. Six realities we build around:</p>
+      <p class="sec-lead">Fundamentally distinct from generic healthcare marketing. Six realities we build around:</p>
       <div class="why-grid">
 
         <div class="why-item">
           <h3>Long consideration cycles</h3>
           <p>International patients are often years into their fertility journey, and
           months into comparing clinics abroad, by the time a first enquiry reaches you.
-          Campaigns built for instant conversion misread the journey.</p>
+          Campaigns built for instant conversion misread the decision process.</p>
         </div>
 
         <div class="why-item">
           <h3>The multi-cycle reality</h3>
           <p>Treatment often takes more than one cycle. Honest communication respects that
-          arc from the first touch.</p>
+          journey from the beginning.</p>
         </div>
 
         <div class="why-item">
@@ -572,8 +640,8 @@
         <div class="why-item">
           <h3>Diverse patient journeys</h3>
           <p>International patients are far more than heterosexual couples: solo mothers by
-          choice, same-sex couples, patients priced or aged out of their home systems. One
-          message does not fit all.</p>
+          choice, same-sex couples, patients priced or aged out of their home systems. Each
+          path shapes the message we write.</p>
         </div>
 
         <div class="why-item">
@@ -616,7 +684,7 @@
   <section id="working-together" class="work" aria-label="Working together">
     <div class="wrap">
       <h2 class="sec-title">Working together</h2>
-      <p class="sec-lead">Built to add consultations, not workload.</p>
+      <p class="sec-lead">Built to deliver consultations, not add workload.</p>
 
       <div class="steps">
         <div class="step">
@@ -707,9 +775,9 @@
 <footer>
   <div class="wrap">
     <nav class="sec-nav sec-nav-bottom" aria-label="Page sections">
-      <a href="#how-we-work">How We Work</a>
       <a href="#who-we-are">Who We Are</a>
-      <a href="#why-different">Why It's Different</a>
+      <a href="#how-we-work">How We Work</a>
+      <a href="#why-different">Marketing for Fertility</a>
       <a href="#corridor-review">Corridor Review</a>
       <a href="#working-together">Working Together</a>
       <a href="#founder">Founder</a>
@@ -719,17 +787,37 @@
   <div class="wrap foot">
     <span>Fertela · Barcelona</span>
     <a href="mailto:hello@fertela.agency">hello@fertela.agency</a>
-    <span class="quiet">This site sets no cookies and collects no analytics.</span>
+    <a href="https://www.linkedin.com/company/fertela" target="_blank" rel="noopener">Fertela on LinkedIn</a>
     <a href="/aviso-legal.html">Aviso Legal</a>
     <a href="/privacidad.html">Privacy Policy</a>
+    <span class="quiet">This site sets no cookies and collects no analytics.</span>
   </div>
 </footer>
 
 <script>
-  /* Hero story: click to replay (no network, no storage - privacy claim unaffected).
-     The 30s loop + restart-on-reload are pure CSS and work without this script. */
+  /* Story animation: click to replay + start-on-scroll (no network, no storage -
+     privacy claim unaffected). The 30s loop itself is pure CSS; with JS disabled the
+     hs-play class in the markup runs it immediately, exactly as before. */
+  (function(){
+    var m=document.getElementById("secMenu"),b=document.getElementById("secMenuBtn");
+    if(m&&b){
+      b.addEventListener("click",function(e){e.stopPropagation();
+        var o=m.classList.toggle("open");b.setAttribute("aria-expanded",o?"true":"false");});
+      document.addEventListener("click",function(e){
+        if(m.classList.contains("open")&&!m.contains(e.target)){m.classList.remove("open");b.setAttribute("aria-expanded","false");}});
+      m.querySelectorAll("a").forEach(function(a){a.addEventListener("click",function(){
+        m.classList.remove("open");b.setAttribute("aria-expanded","false");b.blur();});});
+    }
+  })();
   (function(){var c=document.getElementById("heroStory");if(!c)return;
     c.addEventListener("click",function(){c.classList.remove("hs-play");void c.offsetWidth;c.classList.add("hs-play");});
+    if("IntersectionObserver" in window){
+      c.classList.remove("hs-play");
+      var io=new IntersectionObserver(function(en){
+        if(en[0].isIntersecting){c.classList.add("hs-play");io.disconnect();}
+      },{threshold:.65});
+      io.observe(c);
+    }
   })();
 </script>
 </body>
