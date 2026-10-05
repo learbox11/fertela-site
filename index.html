@@ -665,6 +665,8 @@
   .gp-status{margin-top:14px;font-size:14px;color:var(--orange-ink);text-align:center;}
   .gp-status:empty{display:none;}
   .gp-status a{color:var(--navy);}
+  .gp-mail{font:inherit;font-weight:500;color:var(--navy);background:none;border:0;padding:0 0 1px;cursor:pointer;border-bottom:1.5px solid var(--teal);}
+  .gp-mail:hover{border-color:var(--navy);}
   .gp-done{text-align:center;padding:30px 6px 18px;}
   .gp-done .tick{width:58px;height:58px;border-radius:50%;background:var(--teal);display:grid;place-items:center;margin:0 auto 18px;}
   .gp-done h3{font-size:21px;font-weight:600;color:var(--navy);letter-spacing:-.3px;margin-bottom:10px;}
@@ -1918,20 +1920,26 @@
       var lines=[]; data.forEach(function(v,k){ if(k!=="company_fax"&&k!=="page") lines.push(k+": "+v); });
       location.href="mailto:"+TO+"?subject="+encodeURIComponent("Fertility Clinic Growth Plan request: "+(data.get("clinic")||""))+"&body="+encodeURIComponent(lines.join("\n"));
     }
+    var submitLabel=submit.innerHTML, TIMEOUT=20000;
+    function failed(data){
+      submit.disabled=false; submit.removeAttribute("aria-busy"); submit.innerHTML=submitLabel;
+      status.innerHTML='Your details didn\u2019t send. <button type="button" class="gp-mail">Email them to us instead</button> (opens your email with your answers filled in), or try again.';
+      status.querySelector(".gp-mail").addEventListener("click",function(){ mailFallback(data); });
+    }
     form.addEventListener("submit",function(e){
       e.preventDefault();
       if(!valid(cur)) return;
       var data=collect();
       if(data.get("company_fax")){ done(); return; }
       if(!ENDPOINT){ mailFallback(data); return; }
-      submit.disabled=true; status.textContent="";
-      fetch(ENDPOINT,{method:"POST",body:data})
+      // Show "Sending…", give up after 20 seconds, and offer a pre-filled email straight away on any failure
+      submit.disabled=true; submit.setAttribute("aria-busy","true"); submit.textContent="Sending\u2026"; status.textContent="";
+      var finished=false, ctrl=("AbortController" in window)?new AbortController():null;
+      var timer=setTimeout(function(){ if(finished) return; finished=true; if(ctrl) ctrl.abort(); failed(data); },TIMEOUT);
+      fetch(ENDPOINT,{method:"POST",body:data,signal:ctrl?ctrl.signal:undefined})
         .then(function(r){ return r.json(); })
-        .then(function(j){ if(j&&j.ok) done(); else throw new Error("rejected"); })
-        .catch(function(){
-          submit.disabled=false;
-          status.innerHTML='Your details didn\u2019t send. Check your connection and try again, or email <a href="mailto:'+TO+'">'+TO+'</a>.';
-        });
+        .then(function(j){ if(finished) return; finished=true; clearTimeout(timer); if(j&&j.ok) done(); else failed(data); })
+        .catch(function(){ if(finished) return; finished=true; clearTimeout(timer); failed(data); });
     });
     show(0);
   })();
