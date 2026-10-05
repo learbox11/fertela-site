@@ -1936,8 +1936,11 @@
       submit.disabled=true; submit.setAttribute("aria-busy","true"); submit.textContent="Sending\u2026"; status.textContent="";
       var finished=false, ctrl=("AbortController" in window)?new AbortController():null;
       var timer=setTimeout(function(){ if(finished) return; finished=true; if(ctrl) ctrl.abort(); failed(data); },TIMEOUT);
-      fetch(ENDPOINT,{method:"POST",body:data,signal:ctrl?ctrl.signal:undefined})
-        .then(function(r){ return r.json(); })
+      // Google answers a POST in two steps: the script runs, then Google redirects the browser to fetch the
+      // reply. That second step is sometimes very slow or fails, even though the row is already saved.
+      // So the redirect itself counts as "received": it is only sent once the script has finished.
+      fetch(ENDPOINT,{method:"POST",body:data,redirect:"manual",signal:ctrl?ctrl.signal:undefined})
+        .then(function(r){ if(r.type==="opaqueredirect") return {ok:true}; return r.json(); })
         .then(function(j){ if(finished) return; finished=true; clearTimeout(timer); if(j&&j.ok) done(); else failed(data); })
         .catch(function(){ if(finished) return; finished=true; clearTimeout(timer); failed(data); });
     });
