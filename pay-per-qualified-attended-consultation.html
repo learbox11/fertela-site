@@ -618,7 +618,7 @@
   <section id="roi" class="roi dark glow" aria-labelledby="roi-title">
     <div class="wrap">
       <h2 class="sec-title" id="roi-title">ROI calculator</h2>
-      <p class="sec-lead">Enter your ad budget and conversion rates to see projected consultations, treatment value and return on ad spend.</p>
+      <p class="sec-lead">Enter your budget and conversion rates to see projected consultations, treatments, revenue, costs and ROI.</p>
       <div class="roi-card">
         <div class="roi-inputs">
           <div>
@@ -653,16 +653,16 @@
         <div class="rstat"><span class="v" id="oBook">25</span><span class="k">Booked consultations</span></div>
         <div class="rstat"><span class="v" id="oAtt">19</span><span class="k">Attended consultations</span></div>
         <div class="rstat"><span class="v" id="oTreat">6.6</span><span class="k">Treatments started</span></div>
-        <div class="rstat"><span class="v" id="oVal">€78,750</span><span class="k">Treatment value</span></div>
+        <div class="rstat"><span class="v" id="oVal">€78,750</span><span class="k">Treatment revenue</span></div>
       </div>
       <div class="roi-row roi-kpis">
-        <div class="rstat"><span class="v" id="kNet">€76,250</span><span class="k">Treatment value after spend</span></div>
+        <div class="rstat"><span class="v" id="kNet">€76,250</span><span class="k">Treatment revenue after spend</span></div>
         <div class="rstat"><span class="v" id="kRoas">31.5<span class="x">×</span></span><span class="k">Return on spend</span></div>
         <div class="rstat hl"><span class="v" id="kCpa">€133</span><span class="k">Spend per attended consultation</span></div>
-        <div class="rstat hl"><span class="v" id="kCpt">€381</span><span class="k" id="kCptK">Spend per treatment start, 3% of treatment value</span></div>
+        <div class="rstat hl"><span class="v" id="kCpt">€381</span><span class="k" id="kCptK">Spend per treatment start, 3% of treatment revenue</span></div>
       </div>
 
-      <p class="roi-note"><strong>Ad spend only. Excludes Fertela's fee of €150–300 per qualified attended consultation.</strong> Treatment value is clinic revenue before clinic costs. Indicative figures show a typical month once campaigns are running. Treatments usually start 3 to 6 months after first enquiry.</p>
+      <p class="roi-note"><strong>Ad spend only. Excludes Fertela's fee of €150–300 per qualified attended consultation.</strong> Treatment revenue is before clinic costs. Indicative figures show a typical month once campaigns are running. Treatments usually start 3 to 6 months after first enquiry.</p>
       <details class="assume">
         <summary>How the defaults are set</summary>
         <dl>
@@ -671,6 +671,7 @@
           <dt>Attendance rate</dt><dd>Share of booked consultations that are attended.</dd>
           <dt>Treatment rate</dt><dd>Share of attended consultations that go on to treatment, in line with commonly cited industry figures of about one in three.</dd>
           <dt>Treatment value</dt><dd>For example, one donor egg cycle. Change it to match your own treatment mix.</dd>
+          <dt>Return</dt><dd>Treatment revenue generated for each euro of ad spend.</dd>
         </dl>
       </details>
     </div>
@@ -1058,7 +1059,7 @@
       $("kRoas").innerHTML=spend>0?(roas<100?(Math.round(roas*10)/10).toLocaleString("en-GB"):whole(roas))+'<span class="x">\u00d7</span>':"\u2013";
       $("kCpa").textContent=att>0?eur(spend/att):"\u2013";
       $("kCpt").textContent=treat>0?eur(spend/treat):"\u2013";
-      $("kCptK").textContent=treat>0&&val>0?"Spend per treatment start, "+Math.round(spend/treat/val*100)+"% of treatment value":"Spend per treatment start";
+      $("kCptK").textContent=treat>0&&val>0?"Spend per treatment start, "+Math.round(spend/treat/val*100)+"% of treatment revenue":"Spend per treatment start";
     }
     ["roiSpend","roiCpe","roiValue","roiB","roiA","roiT"].forEach(function(id){$(id).addEventListener("input",calc);});
     calc();
