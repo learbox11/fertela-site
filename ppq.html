@@ -392,6 +392,7 @@
   .rstat .pct{color:var(--teal-ink);font-weight:600;}
   .rstat .km{color:var(--navy);font-weight:500;}
   .rstat .ks{font-weight:400;color:var(--slate);}
+  .rstat .ks strong{font-weight:600;}
   .rstat .k2{display:block;margin-top:4px;font-size:12.5px;font-weight:400;color:var(--slate);}
   .rstat .k2 span{white-space:nowrap;}
   .next{padding-top:72px;}
@@ -676,13 +677,13 @@
         <div class="rstat"><span class="v" id="oVal">€78,750</span><span class="k">Treatment Revenue</span></div>
       </div>
       <div class="roi-row roi-kpis">
-        <div class="rstat plain"><span class="v" id="kNet">€72,219</span><span class="k"><span class="kl km">Revenue</span><span class="kl">after ad spend and fee</span></span></div>
-        <div class="rstat plain"><span class="v" id="kRoas">12.1<span class="x">×</span></span><span class="k"><span class="kl km">Return</span><span class="kl">on total cost</span></span></div>
+        <div class="rstat plain"><span class="v" id="kNet">€72,219</span><span class="k"><span class="kl km">Revenue</span><span class="kl">after acquisition cost</span></span></div>
+        <div class="rstat plain"><span class="v" id="kRoas">12.1<span class="x">×</span></span><span class="k"><span class="kl km">Return</span><span class="kl">on acquisition cost</span></span></div>
         <div class="rstat tint"><span class="v" id="kCpa">€348</span><span class="k">All-in Cost per Attended Consultation</span></div>
-        <div class="rstat tint"><span class="v" id="kCpt">€995</span><span class="k"><span class="kl">All-in Cost per Treatment Start</span><span class="kl ks" id="kPctLine"><span class="pct" id="kPct">8%</span> of treatment revenue</span><span class="k2" id="kCptSplit"><span>€381 ad spend</span> + <span>€614 fee</span></span></span></div>
+        <div class="rstat tint"><span class="v" id="kCpt">€995</span><span class="k"><span class="kl">All-in Cost per Treatment Start</span><span class="kl ks" id="kPctLine"><span class="pct" id="kPct">8%</span> <strong>of treatment revenue</strong></span><span class="k2" id="kCptSplit"><span>€381 ad spend</span> + <span>€614 fee</span></span></span></div>
       </div>
 
-      <p class="roi-note"><strong>Includes ad spend and Fertela's fee of €215 per qualified attended consultation.</strong> Treatment revenue is clinic revenue before clinic costs. Indicative figures show a typical month once campaigns are running. Treatments usually start 3 to 6 months after first enquiry.</p>
+      <p class="roi-note"><strong>Includes ad spend and Fertela's fee of €215 per qualified attended consultation.</strong> Treatment revenue is before clinic costs. Indicative figures show a typical month once campaigns are running. Treatments usually start 3 to 6 months after first enquiry.</p>
       <details class="assume">
         <summary>How the defaults are set</summary>
         <dl>
@@ -691,7 +692,8 @@
           <dt>Attendance rate</dt><dd>Share of booked consultations that are attended.</dd>
           <dt>Treatment rate</dt><dd>Share of attended consultations that go on to treatment, in line with commonly cited industry figures of about one in three.</dd>
           <dt>Treatment value</dt><dd>For example, one donor egg cycle. Change it to match your own treatment mix.</dd>
-          <dt>Return on total cost</dt><dd>Treatment revenue generated for each euro of all-in acquisition cost (includes ad spend + Fertela's fee).</dd>
+          <dt>Acquisition cost</dt><dd>Ad spend plus Fertela's fee.</dd>
+          <dt>Return on acquisition cost</dt><dd>Treatment revenue generated for each euro of acquisition cost.</dd>
           <dt>Rounding</dt><dd>Every stage is calculated unrounded and rounded only for display, so totals can differ slightly from multiplying the rounded figures.</dd>
         </dl>
       </details>
